@@ -1,62 +1,75 @@
-document.getElementById('babyname-form').addEventListener('submit', function (e) {
-    e.preventDefault();
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("babyname-form");
+    const genderSelect = document.getElementById("gender");
+    const countInput = document.getElementById("count");
+    const resultDiv = document.getElementById("babyname-result");
+    const spinner = document.getElementById("babyname-spinner");
   
-    const gender = document.getElementById('gender').value;
-    const count = document.getElementById('count').value;
-    const spinner = document.getElementById('babyname-spinner');
-    const resultDiv = document.getElementById('babyname-result');
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
   
-    if (!gender || !count) return;
+      const gender = genderSelect.value;
+      const count = countInput.value || 1;
   
-    resultDiv.innerHTML = '';
-    spinner.classList.remove('d-none');
-  
-    const url = `https://api.apiverve.com/v1/babynamegenerator?gender=${gender}&count=${count}`;
-  
-    fetch(url, {
-      method: 'GET',
-      headers: {
-        'x-api-key': '91319e3d-9c2f-4a9b-bc07-0fd906146e78' 
+      if (!gender) {
+        resultDiv.textContent = "Please select a gender.";
+        return;
       }
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not OK');
-        }
-        return response.json();
-      })
-      .then(data => {
-        const names = data.names;
-        let html = '<div class="row">';
-        names.forEach(name => {
-          html += `
-            <div class="col-md-4">
-              <div class="card shadow mb-3">
-                <div class="card-body">
-                  <h5 class="card-title">${name.fullName}</h5>
-                  <p class="card-text">
-                    <strong>First Name:</strong> ${name.firstName}<br>
-                    <strong>Middle Name:</strong> ${name.middleName}
-                  </p>
-                </div>
-              </div>
-            </div>
-          `;
+  
+      spinner.classList.remove("d-none");
+      resultDiv.innerHTML = "";
+  
+      await fetchData(gender, count);
+  
+      spinner.classList.add("d-none");
+    });
+  
+    async function fetchData(gender, count) {
+      const apiUrl = `https://api.apiverve.com/v1/babynamegenerator?gender=${gender}&count=${count}`;
+      const apiKey = "91319e3d-9c2f-4a9b-bc07-0fd906146e78";
+  
+      try {
+        const response = await fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            accept: "application/json",
+            "x-api-key": apiKey,
+          },
         });
-        html += '</div>';
-        resultDiv.innerHTML = html;
-      })
-      .catch(error => {
-        console.error('Fetch error:', error);
-        resultDiv.innerHTML = `
-          <div class="alert alert-danger" role="alert">
-            Something went wrong. Please check your API key or try again later.
-          </div>
-        `;
-      })
-      .finally(() => {
-        spinner.classList.add('d-none');
+  
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+  
+        const data = await response.json();
+  
+        displayNames(data.data.names || []);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        resultDiv.innerHTML = `<p class="text-danger">Failed to fetch baby names. Try again later.</p>`;
+      }
+    }
+  
+    function displayNames(names) {
+      if (names.length === 0) {
+        resultDiv.innerHTML = `<p class="text-warning">No names found.</p>`;
+        return;
+      }
+  
+      const list = document.createElement("ul");
+      list.className = "list-group";
+  
+      console.log(names);
+  
+      names.forEach((name) => {
+        const li = document.createElement("li");
+        li.className = "list-group-item";
+        li.textContent = name.fullName;
+        list.appendChild(li);
       });
+  
+      resultDiv.appendChild(list);
+    }
   });
   
   
